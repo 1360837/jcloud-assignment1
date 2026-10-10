@@ -52,6 +52,12 @@ static char state_char(unsigned int state)
 	 */
 	if (state == 0)
 		return 'R';
+	if (state & TASK_INTERRUPTIBLE)
+		return 'S';
+	if (state & TASK_UNINTERRUPTIBLE)
+		return 'D';
+	if (state & TASK_STOPPED)
+		return 'T';
 
 	return '?';
 }
@@ -68,6 +74,7 @@ static int __init proclist_init(void)
 	 * TODO 2: 리스트 순회 중 태스크가 사라지지 않도록 RCU 읽기 구간을 연다.
 	 *         rcu_read_lock();
 	 * ------------------------------------------------------------------ */
+	rcu_read_lock();
 
 	/* ------------------------------------------------------------------
 	 * TODO 3: for_each_process(task) 루프를 작성하고,
@@ -81,10 +88,15 @@ static int __init proclist_init(void)
 	 *
 	 *         count가 limit에 도달하면 break 할 것.
 	 * ------------------------------------------------------------------ */
-	(void)task;
-	(void)count;
+	for_each_process(task) {
+		pr_info("%-8d %-8d %-5c %s\n", task->pid, task->real_parent->pid,
+				state_char(task->__state), task->comm);
+		if (++count >= limit)
+			break;
+	}
 
 	/* TODO 4: rcu_read_unlock(); */
+	rcu_read_unlock();
 
 	pr_info("=== printed %d tasks ===\n", count);
 	return 0;
@@ -99,9 +111,9 @@ module_init(proclist_init);
 module_exit(proclist_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("<학번> <이름>");
+MODULE_AUTHOR("2026000363 남지우");
 MODULE_DESCRIPTION("Week 3 Lab - walk the kernel task list");
-MODULE_VERSION("0.1");
+MODULE_VERSION("1.0");
 
 /*
  * [심화 과제]

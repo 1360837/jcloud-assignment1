@@ -22,7 +22,7 @@ int main(void)
 	int counter = 0;          /* fork() 이후 부모/자식이 각자 사본을 갖는다 */
 	pid_t pid;
 
-	printf("[before fork] pid=%d ppid=%d counter=%d\n",
+	printf("[before fork] pid=%6d | ppid =%6d | counter=%4d\n",
 	       getpid(), getppid(), counter);
 	/*
 	 * stdout이 파이프나 파일로 리다이렉트되면 전 버퍼링(fully buffered)이
@@ -36,28 +36,41 @@ int main(void)
 	 *         fork()는 실패 시 -1, 자식에서는 0, 부모에서는 자식의 PID를
 	 *         반환한다. 반드시 세 경우를 모두 처리할 것.
 	 * ------------------------------------------------------------------ */
-	pid = /* TODO 1 */ -1;
+	// pid = /* TODO 1 */ -1;
+	// 해당 코드에서 -1의 의미를 찾지 못했습니다.
+	pid = fork();
 
 	if (pid < 0) {
 		/* TODO 2: perror()로 오류를 출력하고 EXIT_FAILURE로 종료하시오. */
+		perror("fork");
 		return EXIT_FAILURE;
 	} else if (pid == 0) {
 		/* ---------------- 자식 프로세스 ---------------- */
 		counter += 100;
 		/* TODO 3: 자식의 pid, ppid, counter를 출력하시오.
 		 *         부모의 pid와 자식의 ppid가 같은지 확인할 것. */
-
+		printf("[   child   ] pid=%6d | ppid =%6d | counter=%4d\n", getpid(), getppid(), counter);
+		exit(42);
 		/* 자식은 exit()로 명시적으로 종료한다. 종료 코드 42를 사용하시오. */
 		/* TODO 4 */
 	} else {
 		/* ---------------- 부모 프로세스 ---------------- */
 		counter += 1;
 		/* TODO 5: 부모의 pid, 자식의 pid(=변수 pid), counter를 출력하시오. */
-
+		printf("[   parent  ] pid=%6d | child=%6d | counter=%4d\n", getpid(), pid, counter);
 		/* TODO 6: wait()로 자식이 끝날 때까지 기다리고,
 		 *         WIFEXITED / WEXITSTATUS로 종료 코드를 출력하시오. */
+		int status;
+		
+		if (wait(&status) < 0) {
+			perror("wait");
+			return EXIT_FAILURE;
+		}
+		if (WIFEXITED(status))
+			printf("[parent] child exited with code %d\n", WEXITSTATUS(status));
+		else if (WIFSIGNALED(status))
+			printf("[parent] child killed by signal %d\n", WTERMSIG(status));
 	}
-
 	return EXIT_SUCCESS;
 }
 

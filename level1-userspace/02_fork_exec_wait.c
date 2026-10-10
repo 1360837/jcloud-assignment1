@@ -32,7 +32,11 @@ int main(int argc, char *argv[])
 	printf("[parent] pid=%d, about to fork\n", getpid());
 
 	/* TODO 1: fork() 호출 및 오류 처리 */
-	pid = -1;
+	pid = fork();
+	if (pid < 0){
+		perror("fork");
+		return EXIT_FAILURE;
+	}
 
 	if (pid == 0) {
 		/* ---------------- 자식: 새 프로그램으로 교체 ---------------- */
@@ -41,17 +45,19 @@ int main(int argc, char *argv[])
 		/* TODO 2: execvp()로 argv[1]을 실행하시오.
 		 *         인자 배열은 &argv[1]을 그대로 넘기면 된다.
 		 *         (argv는 NULL로 끝나므로 execvp의 규약을 만족한다) */
+		fflush(stdout);
+		execvp(argv[1], &argv[1]);		
 
 		/* TODO 3: 아래 줄이 실행된다면 그것은 exec가 "실패"했다는 뜻이다.
 		 *         perror("execvp") 후 _exit(127)로 종료하시오.
 		 *         왜 exit()가 아니라 _exit()를 쓰는지 생각해 볼 것. */
-		return 127;
+		perror("execvp");
+		_exit(127);
 	}
 
 	/* ---------------- 부모: 자식을 기다린다 ---------------- */
 	/* TODO 4: waitpid(pid, &status, 0)으로 자식을 기다리시오. */
-	waited = -1;
-	status = 0;
+	waited = waitpid(pid, &status, 0);
 
 	if (waited < 0) {
 		perror("waitpid");
@@ -66,7 +72,12 @@ int main(int argc, char *argv[])
 	 *     ./02_fork_exec_wait /bin/sleep 30
 	 *   를 실행한 뒤 kill -9 <자식 pid> 를 보내 보시오.
 	 */
-	printf("[parent] child %d finished (raw status=0x%x)\n", waited, status);
+	if (WIFEXITED(status))
+		printf("[parent] child %d exited, code=%d\n", waited, WEXITSTATUS(status));
+	else if (WIFSIGNALED(status))
+		printf("[parent] child %d killed by signal %d\n", waited, WTERMSIG(status));
+	else
+		printf("[parent] child %d finished (raw status=0x%x)\n", waited, status);
 
 	return EXIT_SUCCESS;
 }

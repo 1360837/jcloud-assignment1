@@ -50,17 +50,26 @@ static int __init procinfo_init(void)
 	 *   ※ 교재(3판)에는 task->state 로 나오지만 최신 커널은 __state 이다.
 	 *      Elixir에서 include/linux/sched.h 를 열어 직접 확인할 것.
 	 * ------------------------------------------------------------------ */
+	pr_info("current: comm=%s pid=%d tgid=%d state=%u prio=%d\n",
+			current->comm, current->pid, current->tgid, current->__state, current->prio);
 
 	/* ------------------------------------------------------------------
 	 * TODO 2: current->real_parent 를 따라가 부모 프로세스의 comm과 pid도
 	 *         함께 출력하시오. insmod를 실행한 셸이 보이는가?
 	 * ------------------------------------------------------------------ */
+	rcu_read_lock();
+	pr_info("parent : comm=%s pid=%d\n",
+			rcu_dereference(current->real_parent)->comm,
+			rcu_dereference(current->real_parent)->pid);
+	rcu_read_unlock();
 
 	/* ------------------------------------------------------------------
 	 * TODO 3 (심화): current->mm 이 NULL인지 확인하는 코드를 넣으시오.
 	 *         일반 프로세스와 커널 스레드의 차이가 여기서 드러난다.
 	 *         (Level 3에서 다시 확인한다)
 	 * ------------------------------------------------------------------ */
+	pr_info("mm     : %p (%s)\n", current->mm,
+			current->mm ? "user process" : "kernel process");
 
 	return 0;   /* 0을 리턴해야 모듈이 정상 적재된다 */
 }
@@ -69,6 +78,7 @@ static void __exit procinfo_exit(void)
 {
 	/* TODO 4: rmmod를 실행한 프로세스의 comm/pid를 출력하시오.
 	 *         init 때와 같은 프로세스인가? 왜 그런가/아닌가? */
+	pr_info("unload by: comm=%s pid%d\n", current->comm, current->pid);
 
 	pr_info("module unloaded\n");
 }
@@ -77,9 +87,9 @@ module_init(procinfo_init);
 module_exit(procinfo_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("<학번> <이름>");
+MODULE_AUTHOR("2026000363 남지우");
 MODULE_DESCRIPTION("Week 3 Lab - inspect the current task");
-MODULE_VERSION("0.1");
+MODULE_VERSION("1.0");
 
 /*
  * [확인 질문]

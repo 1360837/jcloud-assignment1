@@ -31,9 +31,14 @@
 static void make_zombie(void)
 {
 	pid_t pid;
+	int status;
 
 	/* TODO 1: fork() 호출 */
-	pid = -1;
+	pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		return; // void라 return EXIT_FAILURE; 사용 X
+	}
 
 	if (pid == 0) {
 		printf("[child ] pid=%d — 바로 종료합니다\n", getpid());
@@ -45,10 +50,19 @@ static void make_zombie(void)
 
 	/* TODO 2: wait()를 호출하지 말고 30초 동안 sleep 하시오.
 	 *         그 사이에 ps로 자식의 STAT가 Z 인지 확인할 것. */
+	fflush(stdout); // sleep에 들어가기 전에 PID를 무조건 보여주는 것이 목적
+	sleep(30);
+
 
 	/* TODO 3: 30초가 지난 뒤 wait()를 호출하시오.
 	 *         wait() 직후 다시 ps로 확인하면 좀비가 사라져 있다.
 	 *         → 이것이 "부모가 자식을 회수(reap)한다"는 의미다. */
+	
+	// status 변수 위에 선언
+	if (wait(&status) > 0){
+		if (WIFEXITED(status))
+			printf("[parent] 자식을 회수했습니다. (code= %d)\n", WEXITSTATUS(status));
+	}
 }
 
 /* ------------------------------------------------------------------
@@ -61,7 +75,11 @@ static void make_orphan(void)
 	pid_t pid;
 
 	/* TODO 4: fork() 호출 */
-	pid = -1;
+	pid = fork();
+	if (pid < 0) {
+		perror("fork");
+		return; // void라 return EXIT_FAILURE; 사용 X
+	}
 
 	if (pid == 0) {
 		printf("[child ] pid=%d ppid=%d — 부모가 아직 살아 있음\n",
@@ -69,7 +87,10 @@ static void make_orphan(void)
 
 		/* TODO 5: 5초 sleep 한 뒤 다시 getppid()를 출력하시오.
 		 *         값이 어떻게 바뀌었는가? */
-
+		fflush(stdout);
+		sleep(5);
+		printf("[child ] pid=%d ppid=%d — 부모가 죽은 뒤 (입양)\n", getpid(), getppid()); 
+		
 		_exit(0);
 	}
 

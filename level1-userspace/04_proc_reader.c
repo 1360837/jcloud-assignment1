@@ -17,6 +17,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
+#include <dirent.h>
+
 
 #define LINE_MAX_LEN 512
 
@@ -36,6 +39,97 @@ static int starts_with_key(const char *line)
 			return 1;
 	}
 	return 0;
+}
+
+static void print_cmdline(pid_t target)
+{
+	char path[64], line[LINE_MAX_LEN];
+	FILE *fp;
+	size_t n, i;
+
+	snprintf(path, sizeof(path), "/proc/%d/cmdline", (int)target);
+	fp = fopen(path, "r");
+	if (!fp) {
+		perror(path);
+		return ;
+	}
+	
+	printf("===== %s =====\n", path);
+	
+	n = fread(line, 1, sizeof(line), fp);
+	fclose(fp);
+	line[n]	= '\0';
+	
+	if (n == 0) {
+		printf("(empty)\n");
+		return ;
+	}
+	
+	for (i = 0; i < n; i++) {
+		if (line[i] == '\0')
+			putchar(' ');
+		else
+			putchar(line[i]);
+	}
+	putchar('\n');
+}
+
+static void print_stat(pid_t target)
+{
+	char path[64], line[LINE_MAX_LEN];
+	FILE *fp;
+	char *start_point;
+
+	snprintf(path, sizeof(path), "/proc/%d/stat", (int)target);
+	fp = fopen(path, "r");
+	if (!fp) {
+		perror(path);
+		return ;
+	}
+
+	printf("===== %s =====\n", path);
+	
+	if (fgets(line, sizeof(line), fp)) {
+		start_point = strrchr(line, ')');
+		if (start_point != NULL) {
+			start_point += 2;
+			if (*start_point != '\0')
+				printf("state: %c\n", *start_point);
+		}
+	}
+	fclose(fp);
+}
+
+static void print_task(pid_t target)
+{
+	char path[64];
+	DIR *dir;
+	struct dirent *entry;
+	int cnt = 0;
+
+	snprintf(path, sizeof(path), "/proc/%d/task", (int)target);
+	dir = opendir(path);
+	if (!dir) {
+		perror(path);
+		return ;
+	}
+
+	while ((entry = readdir(dir)) != NULL) {
+		const char *p = entry->d_name;
+		int numeric = (*p != '\0');
+
+		while (*p) {
+			if (!isdigit((unsigned char)*p)) {
+				numeric = 0;
+				break ;
+			}
+			p++;
+		}
+		if (numeric)
+			cnt++;
+	}
+	closedir(dir);
+	printf("===== %s =====\nDir Count : %d\n",path, cnt);
 }
 
 int main(int argc, char *argv[])
@@ -72,6 +166,9 @@ int main(int argc, char *argv[])
 	 *   (c) /proc/<pid>/task/    — 디렉터리 개수 = 이 프로세스의 스레드 수
 	 *                              (opendir/readdir 사용)
 	 * ------------------------------------------------------------------ */
+	print_cmdline(target);
+	print_stat(target);
+	print_task(target);
 
 	/* ------------------------------------------------------------------
 	 * TODO 3 (심화): 인자를 주지 않으면 /proc 전체를 순회하여
