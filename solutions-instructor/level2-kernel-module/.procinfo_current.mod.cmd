@@ -1,1 +1,0 @@
-savedcmd_/home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/procinfo_current.mod := printf '%s\n'   procinfo_current.o | awk '!x[$$0]++ { print("/home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/"$$0) }' > /home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/procinfo_current.mod

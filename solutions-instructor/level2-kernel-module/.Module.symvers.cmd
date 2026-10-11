@@ -1,1 +1,0 @@
-savedcmd_/home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/Module.symvers -T /home/ubuntu/Assignment1/solutions-instructor/level2-kernel-module/modules.order -i Module.symvers -e 
