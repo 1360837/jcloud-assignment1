@@ -40,7 +40,6 @@ static int __init proctree_init(void)
 {
 	struct task_struct *task = NULL;
 	struct task_struct *child;
-	struct list_head *pos;
 	int nr_children = 0;
 
 	/* ------------------------------------------------------------------
@@ -51,7 +50,11 @@ static int __init proctree_init(void)
 	 *
 	 *   찾지 못하면 pr_err()로 알리고 -ESRCH 를 리턴할 것.
 	 * ------------------------------------------------------------------ */
+	rcu_read_lock();
+	task = pid_task(find_get_pid(target), PIDTYPE_PID);	
+
 	if (!task) {
+		rcu_read_unlock();
 		pr_err("pid %d not found\n", target);
 		return -ESRCH;
 	}
@@ -62,11 +65,14 @@ static int __init proctree_init(void)
 	 * TODO 2: 자기 자신의 정보를 출력하시오.
 	 *         pr_info("self  : pid=%d comm=%s\n", task->pid, task->comm);
 	 * ------------------------------------------------------------------ */
+	pr_info("self  : pid=%d comm=%s\n", task->pid, task->comm);
 
 	/* ------------------------------------------------------------------
 	 * TODO 3: 부모를 출력하시오. (task->real_parent)
 	 *         real_parent 와 parent 의 차이는 무엇인가? 주석으로 적을 것.
 	 * ------------------------------------------------------------------ */
+	pr_info("parent: pid=%d comm=%s\n",
+			rcu_dereference(task->real_parent)->pid, rcu_dereference(task->real_parent)->comm);
 
 	/* ------------------------------------------------------------------
 	 * TODO 4: 자식들을 순회하여 모두 출력하시오.
@@ -80,9 +86,13 @@ static int __init proctree_init(void)
 	 *   또는 더 간결하게:
 	 *   list_for_each_entry(child, &task->children, sibling) { ... }
 	 * ------------------------------------------------------------------ */
-	(void)child;
-	(void)pos;
+	list_for_each_entry(child, &task->children, sibling) {
+		pr_info("child : pid=%d comm%s\n", child->pid, child->comm);
+		nr_children++;
+	}
 
+	rcu_read_unlock();	
+	
 	pr_info("=== %d children ===\n", nr_children);
 
 	/* ------------------------------------------------------------------
@@ -90,6 +100,7 @@ static int __init proctree_init(void)
 	 *         따라 올라가며 PID 1에 도달할 때까지의 경로를 출력하시오.
 	 *
 	 *         예)  insmod(3421) → bash(2870) → sshd(2100) → systemd(1)
+	 *
 	 *
 	 *         무한 루프에 빠지지 않도록 pid == 1 에서 반드시 멈출 것.
 	 * ------------------------------------------------------------------ */
@@ -106,9 +117,9 @@ module_init(proctree_init);
 module_exit(proctree_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("<학번> <이름>");
+MODULE_AUTHOR("2026000363 남지우");
 MODULE_DESCRIPTION("Week 3 Lab - traverse the process family tree");
-MODULE_VERSION("0.1");
+MODULE_VERSION("1.0");
 
 /*
  * [확인 질문]
@@ -117,4 +128,4 @@ MODULE_VERSION("0.1");
  *   Q2. real_parent 와 parent 가 달라지는 상황은 언제인가?
  *       (힌트: ptrace로 디버거가 붙었을 때)
  *   Q3. 출력 결과를 pstree -p 와 비교하시오. 차이가 있다면 왜인가?
- */
+*/
