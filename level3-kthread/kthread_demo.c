@@ -61,7 +61,10 @@ static int worker_fn(void *data)
 	 *   ※ 커널 스레드 안에서 while(1); 같은 busy loop을 돌리면
 	 *      해당 CPU가 통째로 묶여 시스템이 멈춘 것처럼 보인다. 반드시 잠들 것.
 	 * ------------------------------------------------------------------ */
-	(void)tick;
+	while (!kthread_should_stop()) {
+		pr_info("tick %lu (pid=%d)\n", tick++, current->pid);
+		msleep_interruptible(interval * 1000);
+	}
 
 	pr_info("worker stopping\n");
 	return 0;
@@ -81,6 +84,11 @@ static int __init kthdemo_init(void)
 	 *   kthread_run = kthread_create() + wake_up_process() 이다.
 	 *   Elixir에서 include/linux/kthread.h 를 열어 정의를 확인할 것.
 	 * ------------------------------------------------------------------ */
+	worker = kthread_run(worker_fn, NULL, "knu_worker");
+	if (IS_ERR(worker)) {
+		pr_err("failed to create kthread\n");
+		return PTR_ERR(worker);
+	}
 
 	pr_info("module loaded\n");
 	return 0;
@@ -95,6 +103,8 @@ static void __exit kthdemo_exit(void)
 	 *   worker_fn이 리턴할 때까지 "블록되어 기다린다".
 	 *   따라서 worker_fn이 영원히 잠들어 있으면 rmmod가 멈춘다 — 주의!
 	 * ------------------------------------------------------------------ */
+	if (worker && !(IS_ERR(worker)))
+		kthread_stop(worker);
 
 	pr_info("module unloaded\n");
 }
@@ -103,9 +113,9 @@ module_init(kthdemo_init);
 module_exit(kthdemo_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("<학번> <이름>");
+MODULE_AUTHOR("2026000363 남지우");
 MODULE_DESCRIPTION("Week 3 Lab - create and stop a kernel thread");
-MODULE_VERSION("0.1");
+MODULE_VERSION("1.0");
 
 /*
  * [심화 과제]
