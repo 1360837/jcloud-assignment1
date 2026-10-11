@@ -1,1 +1,0 @@
-savedcmd_/home/ubuntu/Assignment1/level2-kernel-module/procinfo_current.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T scripts/module.lds -o /home/ubuntu/Assignment1/level2-kernel-module/procinfo_current.ko /home/ubuntu/Assignment1/level2-kernel-module/procinfo_current.o /home/ubuntu/Assignment1/level2-kernel-module/procinfo_current.mod.o
